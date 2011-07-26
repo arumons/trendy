@@ -1,6 +1,7 @@
 open = require 'open-uri'
 redis = require 'redis'
 querystring = require 'querystring'
+begin = require 'begin.js'
 
 woeid_url = 'http://api.twitter.com/1/trends/available.json'
 trends_url = 'http://api.twitter.com/1/trends/[:woeid].json'
@@ -19,6 +20,7 @@ getWoeidFromName = do ->
       cb woeid
     else
       open woeid_url, (err, content) ->
+        console.log content
         content.forEach (country) ->
           if country.name is cityName
             woeid = country.woeid
@@ -28,9 +30,10 @@ getCurrentTrends = (cb) ->
   trends = []
   getWoeidFromName 'Tokyo', (woeid) ->
     open (trends_url.replace("[:woeid]", woeid)), (err, content) ->
-      content[0].trends.forEach (trend) ->
-        trends.push trend.name
-      cb trends
+      if content?
+        content[0].trends.forEach (trend) ->
+          trends.push trend.name
+        cb trends
 
 
 refreshCurrentTrends = (cb) ->
@@ -40,11 +43,20 @@ refreshCurrentTrends = (cb) ->
 
 
 getTweet = ->
+  tweets = []
   if current_trends?
-    open search_url + querystring.stringify({q: current_trends[0]}) + "&since_id=" + since_id, (err, content) ->
-      if content?
-        since_id = content.max_id
-      console.log content
+    current_trends.forEach (trend) ->
+      open search_url + querystring.stringify({q: trend}) + "&since_id=" + since_id, (err, content) ->
+        content.results.forEach (result) ->
+          result.created_at = new Date created_at
+          tweets.push result
+          
+    tweets.sort (a, b) ->
+      a.created_at - b.created_at
+    since_id = tweets[-1].id
+    console.log tweets
+    tweets.forEach (tweet) ->
+      redis_client.publish 'new_tweet', tweet.text
 
 refreshCurrentTrends getTweet
 setInterval refreshCurrentTrends, 1000 * 300
