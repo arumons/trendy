@@ -4,8 +4,14 @@
 SS.socket.on 'disconnect', ->  $('#message').text('SocketStream server is down :-(')
 SS.socket.on 'reconnect', ->   $('#message').text('SocketStream server is up :-)')
 
+messageQueue = []
+
 # This method is called automatically when the websocket connection is established. Do not rename/delete
 exports.init = ->
 
   SS.events.on 'flash', (message) ->
-    $('#tweets').append("<div class='tweet'>#{message}</div>")
+    messageQueue.push message if messageQueue.length < 100
+
+  setInterval ->
+    $('#tweets').prepend("<div class='tweet'>#{ messageQueue.shift() }</div>") if messageQueue.length > 0
+   , 1000

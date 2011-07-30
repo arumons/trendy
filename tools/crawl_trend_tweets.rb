@@ -13,6 +13,8 @@ $search_url = 'http://search.twitter.com/search.json?'
 $redis = Redis.new
 $timer = ActionTimer::Timer.new
 
+$max_id = 0
+
 def getWoeidFromName (cityName)
   return $woeid unless $woeid.nil?
   obj = JSON.parse open($woeid_url).read
@@ -35,14 +37,29 @@ end
 
 def getTweet
   unless $currentTrends.nil? then
-    $currentTrends.each do |trend|
-      content = JSON.parse open($search_url + "q='#{ URI.escape(trend) }'").read
+    tweets = []
+    # get tweets from trends
+    $currentTrends[0..1].each do |trend|
+      pp $search_url + "q='#{ URI.escape(trend) }'" + "&since_id=#{ $max_id }"
+      content = JSON.parse open($search_url + "q='#{ URI.escape(trend) }'" + "&since_id=#{ $max_id }").read
+      pp content
       unless content.nil? then
         content['results'].each do |result|
-          pp result['text']
-          $redis.publish 'new_tweet', result['text']
+          tweets.push result
         end
       end
+    end
+
+    # sort
+    tweets.sort! do |a, b|
+      a['created_at'] <=> b['created_at']   
+    end
+
+    $max_id = tweets[-1]['id_str']
+
+    # publish
+    tweets.each do |tweet|
+      $redis.publish 'new_tweet', tweet['text']
     end
   end
 end
@@ -54,11 +71,12 @@ if $woeid.nil? then
 end
 
 getCurrentTrends
+getTweet
 $timer.add(:period => 300){
   pp getCurrentTrends
 }
 
-$timer.add(:period => 10){
+$timer.add(:period => 60){
   getTweet
 }
 
