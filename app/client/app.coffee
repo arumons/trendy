@@ -12,6 +12,10 @@ exports.init = ->
   SS.events.on 'flash', (message) ->
     messageQueue.push message if messageQueue.length < 100
 
+#  setInterval ->
+#    $('#tweets').prepend("<div class='tweet'>#{ messageQueue.shift() }</div>") if messageQueue.length > 0
+#   , 1000
+
   setInterval ->
-    $('#tweets').prepend("<div class='tweet'>#{ messageQueue.shift() }</div>") if messageQueue.length > 0
+    $('#templates-tweet').tmpl({tweet: messageQueue.shift()}).prependTo('#tweets') if messageQueue.length > 0
    , 1000
