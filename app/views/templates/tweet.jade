@@ -1,8 +1,9 @@
 div.tweet
   div.tweet_image
-    img(height='48', width='48', src='')
+    a(href='http://twitter.com/#!/${from_user}')
+      img(height='48', width='48', src='${profile_image_url}')
   div.tweet_content
     div.tweet_name 
-      | aaa
+      a(href='http://twitter.com/#!/${from_user}')${from_user}
     div.tweet_text
-      | afdasfsaf
+      | ${text}

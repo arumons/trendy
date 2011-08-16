@@ -32,6 +32,7 @@ def getCurrentTrends
   content[0]['trends'].each do |trend|
     $currentTrends.push trend['name']
   end
+  $redis.publish 'trends', JSON.generate($currentTrends)
   return $currentTrends
 end
 
@@ -39,7 +40,7 @@ def getTweet
   unless $currentTrends.nil? then
     tweets = []
     # get tweets from trends
-    $currentTrends[0..1].each do |trend|
+    $currentTrends[0].each do |trend|
       pp $search_url + "q='#{ URI.escape(trend) }'" + "&since_id=#{ $max_id }"
       content = JSON.parse open($search_url + "q='#{ URI.escape(trend) }'" + "&since_id=#{ $max_id }").read
       pp content
@@ -59,7 +60,7 @@ def getTweet
 
     # publish
     tweets.each do |tweet|
-      $redis.publish 'new_tweet', tweet['text']
+      $redis.publish 'new_tweet', JSON.generate(tweet)
     end
   end
 end
@@ -72,11 +73,14 @@ end
 
 getCurrentTrends
 getTweet
-$timer.add(:period => 300){
-  pp getCurrentTrends
-}
 
-$timer.add(:period => 60){
+$count = 0
+$timer.add(:period => 250){
+  $count += 1
+  if $count % 7 == 0 
+    $count = 0
+    getCurrentTrends
+  end
   getTweet
 }
 
