@@ -1,0 +1,7 @@
+div
+  ul
+    {{each trends}}
+    li
+      a(href='http://twitter.com/#!/search/${$value}')
+       | ${$value}
+    {{/each}}
