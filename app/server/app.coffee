@@ -2,29 +2,48 @@
 redis = require 'redis'
 client = redis.createClient()
 
-init_trends = null
+trends = null
 init_tweets = []
+current_tweets = []
 
 client.subscribe 'new_tweet'
 client.subscribe 'trends'
 
 client.on 'message', (channel, message) ->
-  # prepare init trends
+  # prepare trends
   if channel is 'trends'
-    init_trends = JSON.parse message
+    trends = JSON.parse message
+    SS.publish.broadcast channel, trends
+    return
 
-  # preapre init tweets
-  if channel is 'new_tweet'
-    init_tweets.pop() if init_tweets.length > 30
-    init_tweets.unshift JSON.parse message
+  # add tweet
+  tweet = JSON.parse message
+  current_tweets.push tweet 
+  init_tweets.push tweet 
 
-  SS.publish.broadcast channel, message
+  # prevent dupulicate
+  if current_tweets[-2]? and current_tweets[-1] and current_tweets[-2].id is current_tweets[-1].id
+    current_tweets.pop()
+  current_tweets.shift() if current_tweets.length > 500
+  init_tweets.shift() if init_tweets.length > 500
 
 exports.actions =
 
   initTweets: (cb) ->
+    console.log init_tweets
     cb init_tweets
 
   initTrends: (cb) ->
-    cb init_trends
+    cb trends
+
+setInterval (->
+  try
+    console.log init_tweets.length
+    console.log current_tweets.length
+    if current_tweets.length > 0
+      current_tweet = current_tweets.shift()
+      init_tweets.shift() if init_tweets.length >= 30
+      SS.publish.broadcast 'new_tweet', JSON.stringify current_tweet
+  catch e
+    console.log e), 2000
 

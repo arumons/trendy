@@ -40,7 +40,7 @@ def getTweet
   unless $currentTrends.nil? then
     tweets = []
     # get tweets from trends
-    $currentTrends[0].each do |trend|
+    $currentTrends.each do |trend|
       pp $search_url + "q='#{ URI.escape(trend) }'" + "&since_id=#{ $max_id }"
       content = JSON.parse open($search_url + "q='#{ URI.escape(trend) }'" + "&since_id=#{ $max_id }").read
       pp content
@@ -67,7 +67,7 @@ end
   
 $woeid = $redis.get 'woeid'
 if $woeid.nil? then
-  $woeid = getWoeidFromName 'Tokyo'
+  $woeid = getWoeidFromName '東京'
   $redis.set 'woeid', $woeid
 end
 

@@ -5,13 +5,15 @@ SS.socket.on 'disconnect', ->  $('#message').text('SocketStream server is down :
 SS.socket.on 'reconnect', ->   $('#message').text('SocketStream server is up :-)')
 
 messageQueue = []
+previousTweetId = 0
 
 # This method is called automatically when the websocket connection is established. Do not rename/delete
 exports.init = ->
 
   # push new_tweet to queue
   SS.events.on 'new_tweet', (message) ->
-    messageQueue.push JSON.parse(message) if messageQueue.length < 2000
+    tweet = JSON.parse message
+    messageQueue.push tweet if messageQueue.length < 2000 and previousTweetId isnt tweet.id
 
   # set new trends
   SS.events.on 'trend', (message) ->
@@ -30,6 +32,7 @@ exports.init = ->
 
   # get init tweets
   SS.server.app.initTweets (tweets) ->
+    console.log tweets
     tweets.forEach (tweet) ->
       $('#templates-tweet').tmpl(tweet).prependTo('#tweets')
 
