@@ -22,8 +22,9 @@ client.on 'message', (channel, message) ->
   init_tweets.push tweet 
 
   # prevent dupulicate
-  if current_tweets[-2]? and current_tweets[-1] and current_tweets[-2].id is current_tweets[-1].id
+  if current_tweets[current_tweets.length - 2]? and current_tweets[current_tweets.length - 1]? and current_tweets[current_tweets.length - 2].id is current_tweets[current_tweets.length - 1].id
     current_tweets.pop()
+    init_tweets.pop()
   current_tweets.shift() if current_tweets.length > 500
   init_tweets.shift() if init_tweets.length > 500
 
@@ -45,5 +46,5 @@ setInterval (->
       init_tweets.shift() if init_tweets.length >= 30
       SS.publish.broadcast 'new_tweet', JSON.stringify current_tweet
   catch e
-    console.log e), 2000
+    console.log e), 8000
 
